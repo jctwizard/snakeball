@@ -36,6 +36,8 @@ public class HeadController : MonoBehaviour
 	public int origW;
 	public int origH;
 
+	private int lastTouchCount = 0;
+
 	public bool resizeUI;
 
 	void Start() 
@@ -50,6 +52,7 @@ public class HeadController : MonoBehaviour
 
 		highscore = PlayerPrefs.GetInt("highscore");
 		scoreText.text = 0 + "/" + highscore;
+		creditText.enabled = false;
 
 		if (resizeUI)
 		{
@@ -85,7 +88,7 @@ public class HeadController : MonoBehaviour
 
 		if (gameOver)
 		{
-			if (Input.anyKeyDown)
+			if (Input.anyKeyDown && (lastTouchCount == 0))
 			{
 				for (int i = 0; i < bodyParts.Count; i++)
 				{
@@ -107,11 +110,20 @@ public class HeadController : MonoBehaviour
 
 		else if (paused)
 		{
+			// Go to link
+			if ((Input.GetMouseButtonDown(0) && creditText.HitTest(Input.mousePosition)) ||
+			    ((Input.touchCount > 0) && creditText.HitTest(Input.GetTouch(0).position)))
+			{
+				Application.OpenURL("http://www.twitter.com/jctwood");
+			}
+
 			if ((Input.GetMouseButtonDown(0) && pauseText.HitTest(Input.mousePosition)) ||
-				((Input.touchCount > 0) && pauseText.HitTest(Input.GetTouch(0).position)))
+			    (((Input.touchCount > 0) && pauseText.HitTest(Input.GetTouch(0).position)) &&
+			    (lastTouchCount == 0)))
 			{
 				paused = false;
 				pauseText.text = "pause";
+				creditText.enabled = false;
 			}
 		}
 
@@ -121,19 +133,14 @@ public class HeadController : MonoBehaviour
 
 			bool right = Input.GetKey(KeyCode.RightArrow);
 
-			// Go to link
-			if ((Input.GetMouseButtonDown(0) && creditText.HitTest(Input.mousePosition)) ||
-				((Input.touchCount > 0) && creditText.HitTest(Input.GetTouch(0).position)))
-			{
-				Application.OpenURL("http://www.twitter.com/jctwood");
-			}
-
 			// Pause the game
 			if ((Input.GetMouseButtonDown(0) && pauseText.HitTest(Input.mousePosition)) ||
-			    ((Input.touchCount > 0) && pauseText.HitTest(Input.GetTouch(0).position)))
+			    (((Input.touchCount > 0) && pauseText.HitTest(Input.GetTouch(0).position)) &&
+				(lastTouchCount == 0)))
 			{
 				paused = true;
 				pauseText.text = "unpause";
+				creditText.enabled = true;
 			}
 
 			if ((Input.touchCount > 0) && (Input.GetTouch(0).position.y < (Screen.height * 0.5f)))
@@ -204,13 +211,15 @@ public class HeadController : MonoBehaviour
 
 			controlBall.transform.Rotate(velocity.y, velocity.x, 0);
 
-			if (bodyCollision() && score > 0)
+			if (bodyCollision(this.gameObject, headRadius) && (score > 0))
 			{
 				gameOver = true;
 
 				retryText.enabled = true;
 			}
 		}
+
+		lastTouchCount = Input.touchCount;
 	}
 
 	void addBodyPart(int count = 1)
@@ -244,16 +253,19 @@ public class HeadController : MonoBehaviour
 
 	void moveApple()
 	{
-		Vector3 randCoord = Vector3.zero;
-
-		while (randCoord == Vector3.zero)
+		do
 		{
-			randCoord = new Vector3(Random.Range(-1.0f, 1.0f), Random.Range(-1.0f, 1.0f), Random.Range(-1.0f, 1.0f));
-			randCoord.Normalize();
-			randCoord.Scale(new Vector3(ballRadius, ballRadius, ballRadius));
-		}
+			Vector3 randCoord = Vector3.zero;
 
-		apple.transform.position = randCoord;
+			while (randCoord == Vector3.zero)
+			{
+				randCoord = new Vector3(Random.Range(-1.0f, 1.0f), Random.Range(-1.0f, 1.0f), Random.Range(-1.0f, 1.0f));
+				randCoord.Normalize();
+				randCoord.Scale(new Vector3(ballRadius, ballRadius, ballRadius));
+			}
+
+			apple.transform.position = randCoord;
+		} while(bodyCollision(apple, appleRadius));
 	}
 
 	bool sphereCollision(GameObject a, float aR, GameObject b, float bR)
@@ -278,13 +290,13 @@ public class HeadController : MonoBehaviour
 		}
 	}
 
-	bool bodyCollision()
+	bool bodyCollision(GameObject collider, float colliderRadius)
 	{
 		for(int i = 5; i < bodyParts.Count - 1; i++)
 		{
 			if ((i + 1) % 3 != 0)
 			{
-				if(sphereCollision((GameObject)bodyParts[i], headRadius, this.gameObject, headRadius))
+				if(sphereCollision((GameObject)bodyParts[i], headRadius, collider, colliderRadius))
 				{
 					return true;
 				}
@@ -292,13 +304,5 @@ public class HeadController : MonoBehaviour
 		}
 
 		return false;
-	}
-
-	void OnGUI()
-	{
-		//if (GUI.Button(new Rect(Screen.width * 0.5f - 60, 20, 150, 20), "created by @jctwood", GUIStyle.none))
-		//{
-		//	Application.OpenURL("http://www.twitter.com/jctwood");
-		//}
 	}
 }

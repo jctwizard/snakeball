@@ -24,9 +24,12 @@ public class HeadController : MonoBehaviour
 	public int applePartBonus;
 
 	private bool paused = false;
+	private bool gameOver = false;
 
 	public GUIText scoreText;
+	public GUIText creditText;
 	public GUIText retryText;
+	public GUIText pauseText;
 	public GUITexture leftButton;
 	public GUITexture rightButton;
 
@@ -71,24 +74,6 @@ public class HeadController : MonoBehaviour
 			myText.pixelOffset = new Vector2(pixOff.x*scaleX, pixOff.y*scaleY); //new position
 			myText.fontSize = (int)(origSizeText * scaleX); //new size font
 		}
-
-		//Find all GUITexture on your scene
-		GUITexture[] textures =  FindObjectsOfType(typeof(GUITexture)) as GUITexture[];
-
-		foreach(GUITexture myTexture in textures) 
-		{ 
-			//find your element of texture
-			Rect pixIns = myTexture.pixelInset; //your dimention of texture
-
-			//Change size pixIns for our screen
-			pixIns.x = pixIns.x * scaleX;
-			pixIns.y = pixIns.y * scaleY;
-			pixIns.width = pixIns.width * scaleX;
-			pixIns.height = pixIns.height * scaleY;
-
-			//Sets new rectangle for our texture
-			myTexture.pixelInset = pixIns;
-		}
 	}
 
 	void FixedUpdate() 
@@ -98,7 +83,7 @@ public class HeadController : MonoBehaviour
 			Application.Quit();
 		}
 
-		if (paused)
+		if (gameOver)
 		{
 			if (Input.anyKeyDown)
 			{
@@ -116,7 +101,17 @@ public class HeadController : MonoBehaviour
 
 				scoreText.text = score + "/" + highscore;
 
+				gameOver = false;
+			}
+		}
+
+		else if (paused)
+		{
+			if ((Input.GetMouseButtonDown(0) && pauseText.HitTest(Input.mousePosition)) ||
+				((Input.touchCount > 0) && pauseText.HitTest(Input.GetTouch(0).position)))
+			{
 				paused = false;
+				pauseText.text = "pause";
 			}
 		}
 
@@ -125,6 +120,21 @@ public class HeadController : MonoBehaviour
 			bool left = Input.GetKey(KeyCode.LeftArrow);
 
 			bool right = Input.GetKey(KeyCode.RightArrow);
+
+			// Go to link
+			if ((Input.GetMouseButtonDown(0) && creditText.HitTest(Input.mousePosition)) ||
+				((Input.touchCount > 0) && creditText.HitTest(Input.GetTouch(0).position)))
+			{
+				Application.OpenURL("http://www.twitter.com/jctwood");
+			}
+
+			// Pause the game
+			if ((Input.GetMouseButtonDown(0) && pauseText.HitTest(Input.mousePosition)) ||
+			    ((Input.touchCount > 0) && pauseText.HitTest(Input.GetTouch(0).position)))
+			{
+				paused = true;
+				pauseText.text = "unpause";
+			}
 
 			if ((Input.touchCount > 0) && (Input.GetTouch(0).position.y < (Screen.height * 0.5f)))
 			{
@@ -196,7 +206,7 @@ public class HeadController : MonoBehaviour
 
 			if (bodyCollision() && score > 0)
 			{
-				paused = true;
+				gameOver = true;
 
 				retryText.enabled = true;
 			}
@@ -238,7 +248,7 @@ public class HeadController : MonoBehaviour
 
 		while (randCoord == Vector3.zero)
 		{
-			randCoord = new Vector3(Random.Range(-1, 1), Random.Range(-1, 1), Random.Range(-1, 1));
+			randCoord = new Vector3(Random.Range(-1.0f, 1.0f), Random.Range(-1.0f, 1.0f), Random.Range(-1.0f, 1.0f));
 			randCoord.Normalize();
 			randCoord.Scale(new Vector3(ballRadius, ballRadius, ballRadius));
 		}
@@ -259,8 +269,6 @@ public class HeadController : MonoBehaviour
 
 		if (distance < radius)
 		{
-			Debug.Log("larger radius: " + (radius) + ", distance: " + distance);
-
 			return true;
 		}
 
@@ -288,9 +296,9 @@ public class HeadController : MonoBehaviour
 
 	void OnGUI()
 	{
-		if (GUI.Button(new Rect(Screen.width * 0.5f - 60, 20, 150, 20), "created by @jctwood", GUIStyle.none))
-		{
-			Application.OpenURL("http://www.twitter.com/jctwood");
-		}
+		//if (GUI.Button(new Rect(Screen.width * 0.5f - 60, 20, 150, 20), "created by @jctwood", GUIStyle.none))
+		//{
+		//	Application.OpenURL("http://www.twitter.com/jctwood");
+		//}
 	}
 }

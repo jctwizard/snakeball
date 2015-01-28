@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 using System.Collections;
 
 public class HeadController : MonoBehaviour 
@@ -26,12 +27,12 @@ public class HeadController : MonoBehaviour
 	private bool paused = false;
 	private bool gameOver = false;
 
-	public GUIText scoreText;
-	public GUIText creditText;
-	public GUIText retryText;
-	public GUIText pauseText;
-	public GUITexture leftButton;
-	public GUITexture rightButton;
+	public Text scoreText;
+	public Text creditText;
+	public Text retryText;
+	public Text pauseText;
+	public Image leftButton;
+	public Image rightButton;
 
 	public int origW;
 	public int origH;
@@ -110,7 +111,7 @@ public class HeadController : MonoBehaviour
 
 		else if (paused)
 		{
-			// Go to link
+			/*// Go to link
 			if ((Input.GetMouseButtonDown(0) && creditText.HitTest(Input.mousePosition)) ||
 			    ((Input.touchCount > 0) && creditText.HitTest(Input.GetTouch(0).position)))
 			{
@@ -124,7 +125,7 @@ public class HeadController : MonoBehaviour
 				paused = false;
 				pauseText.text = "pause";
 				creditText.enabled = false;
-			}
+			}*/
 		}
 
 		else
@@ -134,14 +135,14 @@ public class HeadController : MonoBehaviour
 			bool right = Input.GetKey(KeyCode.RightArrow);
 
 			// Pause the game
-			if ((Input.GetMouseButtonDown(0) && pauseText.HitTest(Input.mousePosition)) ||
+			/*if ((Input.GetMouseButtonDown(0) && pauseText.HitTest(Input.mousePosition)) ||
 			    (((Input.touchCount > 0) && pauseText.HitTest(Input.GetTouch(0).position)) &&
 				(lastTouchCount == 0)))
 			{
 				paused = true;
 				pauseText.text = "unpause";
 				creditText.enabled = true;
-			}
+			}*/
 
 			if ((Input.touchCount > 0) && (Input.GetTouch(0).position.y < (Screen.height * 0.5f)))
 			{

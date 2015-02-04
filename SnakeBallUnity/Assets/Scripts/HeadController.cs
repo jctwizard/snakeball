@@ -31,8 +31,11 @@ public class HeadController : MonoBehaviour
 	public Text creditText;
 	public Text retryText;
 	public Text pauseText;
+	public Toggle pauseToggle;
 	public Image leftButton;
 	public Image rightButton;
+
+	public Color blueColour;
 
 	public int origW;
 	public int origH;
@@ -54,30 +57,6 @@ public class HeadController : MonoBehaviour
 		highscore = PlayerPrefs.GetInt("highscore");
 		scoreText.text = 0 + "/" + highscore;
 		creditText.enabled = false;
-
-		if (resizeUI)
-		{
-			scaleUI();
-		}
-	}
-
-	void scaleUI()
-	{
-		// Acquire new scales
-		float scaleX = Screen.width / origW; //your scale x
-		float scaleY = Screen.height / origH; //your scale y
-
-		//Find all GUIText object on your scene
-		GUIText[] texts = FindObjectsOfType(typeof(GUIText)) as GUIText[]; 
-
-		foreach(GUIText myText in texts) 
-		{ 
-			//find your element of text
-			Vector2 pixOff = myText.pixelOffset; //your pixel offset on screen
-			int origSizeText = myText.fontSize;
-			myText.pixelOffset = new Vector2(pixOff.x*scaleX, pixOff.y*scaleY); //new position
-			myText.fontSize = (int)(origSizeText * scaleX); //new size font
-		}
 	}
 
 	void FixedUpdate() 
@@ -102,6 +81,7 @@ public class HeadController : MonoBehaviour
 				score = 0;
 
 				retryText.enabled = false;
+				pauseText.enabled = true;
 
 				scoreText.text = score + "/" + highscore;
 
@@ -111,21 +91,12 @@ public class HeadController : MonoBehaviour
 
 		else if (paused)
 		{
-			/*// Go to link
-			if ((Input.GetMouseButtonDown(0) && creditText.HitTest(Input.mousePosition)) ||
-			    ((Input.touchCount > 0) && creditText.HitTest(Input.GetTouch(0).position)))
-			{
-				Application.OpenURL("http://www.twitter.com/jctwood");
-			}
-
-			if ((Input.GetMouseButtonDown(0) && pauseText.HitTest(Input.mousePosition)) ||
-			    (((Input.touchCount > 0) && pauseText.HitTest(Input.GetTouch(0).position)) &&
-			    (lastTouchCount == 0)))
+			if (!pauseToggle.isOn)
 			{
 				paused = false;
 				pauseText.text = "pause";
 				creditText.enabled = false;
-			}*/
+			}
 		}
 
 		else
@@ -135,14 +106,12 @@ public class HeadController : MonoBehaviour
 			bool right = Input.GetKey(KeyCode.RightArrow);
 
 			// Pause the game
-			/*if ((Input.GetMouseButtonDown(0) && pauseText.HitTest(Input.mousePosition)) ||
-			    (((Input.touchCount > 0) && pauseText.HitTest(Input.GetTouch(0).position)) &&
-				(lastTouchCount == 0)))
+			if (pauseToggle.isOn)
 			{
 				paused = true;
 				pauseText.text = "unpause";
 				creditText.enabled = true;
-			}*/
+			}
 
 			if ((Input.touchCount > 0) && (Input.GetTouch(0).position.y < (Screen.height * 0.5f)))
 			{
@@ -189,21 +158,33 @@ public class HeadController : MonoBehaviour
 			if (left && right)
 			{
 				speed = baseSpeed + 1;
+				leftButton.color = blueColour;
+				rightButton.color = blueColour;
 			}
 
-			else 
+			else if (left || right)
 			{
 				speed = baseSpeed;
 
 				if (left)
 				{
 					rotation -= 0.1f;
+					leftButton.color = blueColour;
+					rightButton.color = Color.white;
 				}
 				
 				else if (right)
 				{
 					rotation += 0.1f;
+					rightButton.color = blueColour;
+					leftButton.color = Color.white;
 				}
+			}
+
+			else
+			{
+				leftButton.color = Color.white;
+				rightButton.color = Color.white;
 			}
 
 			velocity.x = Mathf.Cos(rotation);
@@ -217,6 +198,7 @@ public class HeadController : MonoBehaviour
 				gameOver = true;
 
 				retryText.enabled = true;
+				pauseText.enabled = false;
 			}
 		}
 
@@ -305,5 +287,11 @@ public class HeadController : MonoBehaviour
 		}
 
 		return false;
+	}
+
+	// Accessed from the credit's button component
+	public void creditLink()
+	{
+		Application.OpenURL("http://www.twitter.com/jctwood");
 	}
 }

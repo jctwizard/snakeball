@@ -37,7 +37,6 @@ public class WorldController : MonoBehaviour
 	public Text retryText;
 	public Text pauseText;
 	public Text snakeballText;
-	public Toggle pauseToggle;
 	public Image leftButton;
 	public Image rightButton;
 
@@ -70,50 +69,32 @@ public class WorldController : MonoBehaviour
 
 		if (gameOver)
 		{
-			if (Input.GetKeyDown(KeyCode.Space) || ((Input.touchCount > 0) && (lastTouchCount == 0) && (Input.GetTouch(0).position.y > (Screen.height * 0.2f))))
+			if (Input.GetKeyDown(KeyCode.Space))
 			{
 				for (int i = 0; i < bodyParts.Count; i++)
 				{
 					Destroy((GameObject)bodyParts[i]);
 				}
-
+				
 				bodyParts.Clear();
-
+				
 				addBodyPart(initialParts);
 				score = 0;
-
+				
 				retryText.enabled = false;
 				pauseText.enabled = true;
-
+				
 				scoreText.text = score + "/" + highscore;
-
+				
 				gameOver = false;
 			}
 		}
 
-		else if (paused)
-		{
-			if (!pauseToggle.isOn)
-			{
-				paused = false;
-				pauseText.text = "pause";
-				creditText.enabled = false;
-			}
-		}
-
-		else
+		else if (!paused)
 		{
 			bool left = Input.GetKey(KeyCode.LeftArrow);
 
 			bool right = Input.GetKey(KeyCode.RightArrow);
-
-			// Pause the game
-			if (pauseToggle.isOn)
-			{
-				paused = true;
-				pauseText.text = "unpause";
-				creditText.enabled = true;
-			}
 
 			if ((Input.touchCount > 0) && (Input.GetTouch(0).position.y < (Screen.height * 0.5f)))
 			{
@@ -331,5 +312,47 @@ public class WorldController : MonoBehaviour
 		scoreText.color = newColor;
 		retryText.color = newColor;
 		snakeballText.color = newColor;
+	}
+
+	// Accessed from pause button component
+	public void pauseButton()
+	{
+		paused = !paused;
+
+		if (paused)
+		{
+			pauseText.text = "unpause";
+			creditText.enabled = true;
+		}
+
+		else
+		{
+			pauseText.text = "pause";
+			creditText.enabled = false;
+		}
+	}
+	
+	// Accessed from retry button component
+	public void retryButton()
+	{
+		if (gameOver)
+		{
+			for (int i = 0; i < bodyParts.Count; i++)
+			{
+				Destroy((GameObject)bodyParts[i]);
+			}
+			
+			bodyParts.Clear();
+			
+			addBodyPart(initialParts);
+			score = 0;
+			
+			retryText.enabled = false;
+			pauseText.enabled = true;
+			
+			scoreText.text = score + "/" + highscore;
+			
+			gameOver = false;
+		}
 	}
 }

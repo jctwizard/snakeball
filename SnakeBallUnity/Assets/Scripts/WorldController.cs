@@ -28,6 +28,7 @@ public class WorldController : MonoBehaviour
 
 	private bool paused = false;
 	private bool gameOver = false;
+	private bool hiscores = false;
 
 	private bool lightTheme = true;
 	
@@ -36,13 +37,18 @@ public class WorldController : MonoBehaviour
 	public Text creditText;
 	public Text retryText;
 	public Text pauseText;
+	public Text hiscoreText;
+	public Image hiscorePanel;
+	public Text errorText;
 	public Text snakeballText;
 	public Image leftButton;
 	public Image rightButton;
+	public InputField nameInput;
+
+	public GameObject baseText;
 
 	public Color blueColour;
-
-	private int lastTouchCount = 0;
+	public Color noColour;
 
 	void Start() 
 	{
@@ -51,13 +57,17 @@ public class WorldController : MonoBehaviour
 
 		moveApple();
 		addBodyPart(initialParts);
-		retryText.enabled = false;
-		leftButton.enabled = false;
-		rightButton.enabled = false;
+		retryText.gameObject.SetActive(false);
 
 		highscore = PlayerPrefs.GetInt("highscore");
 		scoreText.text = 0 + "/" + highscore;
-		creditText.enabled = false;
+
+		creditText.gameObject.SetActive(false);
+		nameInput.gameObject.SetActive(false);
+		errorText.gameObject.SetActive(false);
+		hiscorePanel.gameObject.SetActive(false);
+
+		Debug.Log(PlayerPrefs.GetInt("id"));
 	}
 
 	void FixedUpdate() 
@@ -81,8 +91,8 @@ public class WorldController : MonoBehaviour
 				addBodyPart(initialParts);
 				score = 0;
 				
-				retryText.enabled = false;
-				pauseText.enabled = true;
+				retryText.gameObject.SetActive(false);
+				pauseText.gameObject.SetActive(true);
 				
 				scoreText.text = score + "/" + highscore;
 				
@@ -117,9 +127,6 @@ public class WorldController : MonoBehaviour
 				}
 			}
 
-			leftButton.enabled = left ? true : false;
-			rightButton.enabled = right ? true : false;
-
 			if (sphereCollision(head, headRadius, apple, appleRadius))
 			{
 				addBodyPart(applePartBonus);
@@ -153,21 +160,21 @@ public class WorldController : MonoBehaviour
 				{
 					rotation -= 0.1f;
 					leftButton.color = blueColour;
-					rightButton.color = Color.white;
+					rightButton.color = noColour;
 				}
 				
 				else if (right)
 				{
 					rotation += 0.1f;
 					rightButton.color = blueColour;
-					leftButton.color = Color.white;
+					leftButton.color = noColour;
 				}
 			}
 
 			else
 			{
-				leftButton.color = Color.white;
-				rightButton.color = Color.white;
+				leftButton.color = noColour;
+				rightButton.color = noColour;
 			}
 
 			velocity.x = Mathf.Cos(rotation);
@@ -183,12 +190,10 @@ public class WorldController : MonoBehaviour
 				leftButton.color = Color.white;
 				rightButton.color = Color.white;
 
-				retryText.enabled = true;
-				pauseText.enabled = false;
+				retryText.gameObject.SetActive(true);
+				pauseText.gameObject.SetActive(false);
 			}
 		}
-
-		lastTouchCount = Input.touchCount;
 	}
 
 	void addBodyPart(int count = 1)
@@ -322,13 +327,26 @@ public class WorldController : MonoBehaviour
 		if (paused)
 		{
 			pauseText.text = "unpause";
-			creditText.enabled = true;
+			creditText.gameObject.SetActive(true);
+			leftButton.color = noColour;
+			rightButton.color = noColour;
 		}
 
 		else
 		{
 			pauseText.text = "pause";
-			creditText.enabled = false;
+			creditText.gameObject.SetActive(false);
+			hiscoreText.gameObject.SetActive(true);
+			hiscorePanel.gameObject.SetActive(false);
+			errorText.gameObject.SetActive(false);
+			nameInput.gameObject.SetActive(false);
+
+			GUIText[] scores = FindObjectsOfType(typeof(GUIText)) as GUIText[];
+
+			foreach (GUIText score in scores)
+			{
+				Destroy(score.gameObject);
+			}
 		}
 	}
 	
@@ -347,12 +365,200 @@ public class WorldController : MonoBehaviour
 			addBodyPart(initialParts);
 			score = 0;
 			
-			retryText.enabled = false;
-			pauseText.enabled = true;
+			retryText.gameObject.SetActive(false);
+			pauseText.gameObject.SetActive(true);
 			
 			scoreText.text = score + "/" + highscore;
 			
 			gameOver = false;
 		}
+	}
+
+	// Accessed from hiscore button component
+	public void hiscoreButton()
+	{
+		hiscores = !hiscores;
+
+		if (hiscores)
+		{
+			if (!paused)
+			{
+				pauseButton();
+			}
+
+			hiscorePanel.gameObject.SetActive(true);
+			hiscoreText.gameObject.SetActive(false);
+			creditText.gameObject.SetActive(false);
+
+			if (PlayerPrefs.GetInt("id") == 0)
+			{
+				nameInput.gameObject.SetActive(true);
+				nameInput.Select();
+				nameInput.ActivateInputField();
+			}
+
+			else
+			{
+				StartCoroutine("GetRank");
+			}
+		}
+	}
+
+	public void setName()
+	{
+		PlayerPrefs.SetString("name", nameInput.text);
+
+		nameInput.gameObject.SetActive(false);
+
+		StartCoroutine("CreateHighscore");
+	}
+
+	IEnumerator CreateHighscore()
+	{
+		string name = PlayerPrefs.GetString("name");
+		string createHighscoreURL = "http://www.snakeball.jctwood.uk/CreateHighscore.php?";
+		WWW createHighscorePost = new WWW(createHighscoreURL + "name=" + name + "&score=" + highscore);
+
+		yield return createHighscorePost;
+
+		if (createHighscorePost.error == null)
+		{
+			PlayerPrefs.SetInt("id", System.Int32.Parse(createHighscorePost.text));
+
+			StartCoroutine("GetRank");
+		}
+
+		else
+		{
+			Error();
+		}
+	}
+
+	IEnumerator SetHighscore()
+	{
+		string id = PlayerPrefs.GetInt("id").ToString();
+		string setHighscoreURL = "http://www.snakeball.jctwood.uk/SetHighscore.php?";
+		WWW setHighscorePost = new WWW(setHighscoreURL + "id=" + id + "&score=" + highscore);
+		
+		yield return setHighscorePost;
+		
+		if (setHighscorePost.error != null)
+		{
+			Error();
+		}
+	}
+	
+	IEnumerator GetRank()
+	{
+		string id = PlayerPrefs.GetInt("id").ToString();
+		string getRankURL = "http://www.snakeball.jctwood.uk/GetRank.php?";
+		WWW getRankPost = new WWW(getRankURL + "id=" + id);
+		
+		yield return getRankPost;
+		
+		if (getRankPost.error == null)
+		{
+			PlayerPrefs.SetInt("rank", System.Int32.Parse(getRankPost.text));
+
+			StartCoroutine("GetHighscores");
+		}
+
+		else
+		{
+			Error();
+		}
+	}
+
+	IEnumerator GetHighscores()
+	{
+		string getHighscoresURL = "http://www.snakeball.jctwood.uk/GetHighscores.php";
+		WWW getHighscoresPost = new WWW(getHighscoresURL);
+		
+		yield return getHighscoresPost;
+		
+		if (getHighscoresPost.error == null)
+		{
+			string[] textlist = getHighscoresPost.text.Split(new string[]{"\n","\t"}, System.StringSplitOptions.RemoveEmptyEntries);
+		
+			string[] Names = new string[Mathf.FloorToInt(textlist.Length/2)];
+			string[] Scores = new string[Names.Length];
+			int rank = PlayerPrefs.GetInt("rank");
+
+			for (int i = 0; i < textlist.Length; i++)
+			{
+				if (i % 2 == 0)
+				{
+					Names[Mathf.FloorToInt(i / 2)] = textlist[i];
+				}
+
+				else 
+				{
+					Scores[Mathf.FloorToInt(i / 2)] = textlist[i];
+				}
+			}
+
+			// Create text
+			Vector2 LeftTextPosition = new Vector2(0.22f,0.85f);
+			Vector2 RightTextPosition = new Vector2(0.76f, 0.85f);
+			Vector2 CentreTextPosition = new Vector2(0.33f, 0.85f);
+
+			GameObject Scoresheader = Instantiate(baseText, new Vector2(0.5f,0.94f), Quaternion.identity) as GameObject;
+			Scoresheader.guiText.text = "High Scores";
+			Scoresheader.guiText.anchor = TextAnchor.MiddleCenter;
+			Scoresheader.guiText.fontSize = 35;
+
+			LeftTextPosition -= new Vector2(0, 0.062f);
+			RightTextPosition -= new Vector2(0, 0.062f);
+			CentreTextPosition -= new Vector2(0, 0.062f);
+
+			for(int i=0;i<Names.Length;i++)
+			{
+				GameObject Score = Instantiate(baseText, RightTextPosition, Quaternion.identity) as GameObject;
+				Score.guiText.text = Scores[i];
+				Score.guiText.anchor = TextAnchor.MiddleCenter;
+				GameObject Name = Instantiate(baseText, CentreTextPosition, Quaternion.identity) as GameObject;
+				Name.guiText.text = Names[i];
+				GameObject Rank = Instantiate(baseText, LeftTextPosition, Quaternion.identity) as GameObject;
+				Rank.guiText.text = "" + (i + 1);
+				Rank.guiText.anchor = TextAnchor.MiddleCenter;
+
+				if (i + 1 == rank)
+				{
+					Score.guiText.material.color = Color.yellow;
+					Name.guiText.material.color = Color.yellow;
+					Rank.guiText.material.color = Color.yellow;
+				}
+
+				LeftTextPosition -= new Vector2(0, 0.062f);
+				RightTextPosition -= new Vector2(0, 0.062f);
+				CentreTextPosition -= new Vector2(0, 0.062f);
+			}
+
+			if (rank > 10)
+			{
+				GameObject Score = Instantiate(baseText, RightTextPosition, Quaternion.identity) as GameObject;
+				Score.guiText.text = "" + highscore;
+				Score.guiText.anchor = TextAnchor.MiddleCenter;
+				GameObject Name = Instantiate(baseText, CentreTextPosition, Quaternion.identity) as GameObject;
+				Name.guiText.text = PlayerPrefs.GetString("name");
+				GameObject Rank = Instantiate(baseText, LeftTextPosition, Quaternion.identity) as GameObject;
+				Rank.guiText.text = "" + (rank);
+				Rank.guiText.anchor = TextAnchor.MiddleCenter;
+				
+				Score.guiText.material.color = Color.yellow;
+				Name.guiText.material.color = Color.yellow;
+				Rank.guiText.material.color = Color.yellow;
+			}
+		}
+		
+		else
+		{
+			Error();
+		}
+	}
+
+	void Error()
+	{
+		errorText.gameObject.SetActive(true);
 	}
 }

@@ -17,6 +17,6 @@ $query =
 
 $result = mysql_query($query) or die('Query failed: ' . mysql_error());
 
-echo mysql_insert_id() . "";
+echo mysql_insert_id($db) . "";
 
 ?>

@@ -68,6 +68,8 @@ public class WorldController : MonoBehaviour
 		hiscorePanel.gameObject.SetActive(false);
 
 		Debug.Log(PlayerPrefs.GetInt("id"));
+
+		StartCoroutine("SetHighscore");
 	}
 
 	void FixedUpdate() 
@@ -415,9 +417,11 @@ public class WorldController : MonoBehaviour
 
 	IEnumerator CreateHighscore()
 	{
+		Debug.Log("Creating highscore");
+
 		string name = PlayerPrefs.GetString("name");
 		string createHighscoreURL = "http://www.snakeball.jctwood.uk/CreateHighscore.php?";
-		WWW createHighscorePost = new WWW(createHighscoreURL + "name=" + name + "&score=" + highscore);
+		WWW createHighscorePost = new WWW(createHighscoreURL + "name=" + WWW.EscapeURL(name) + "&score=" + WWW.EscapeURL(highscore.ToString()));
 
 		yield return createHighscorePost;
 
@@ -436,9 +440,11 @@ public class WorldController : MonoBehaviour
 
 	IEnumerator SetHighscore()
 	{
+		Debug.Log("Setting highscore");
+
 		string id = PlayerPrefs.GetInt("id").ToString();
 		string setHighscoreURL = "http://www.snakeball.jctwood.uk/SetHighscore.php?";
-		WWW setHighscorePost = new WWW(setHighscoreURL + "id=" + id + "&score=" + highscore);
+		WWW setHighscorePost = new WWW(setHighscoreURL + "id=" + WWW.EscapeURL(id) + "&score=" + WWW.EscapeURL(highscore.ToString()));
 		
 		yield return setHighscorePost;
 		
@@ -446,13 +452,20 @@ public class WorldController : MonoBehaviour
 		{
 			Error();
 		}
+
+		else
+		{
+			Debug.Log("Success");
+		}
 	}
 	
 	IEnumerator GetRank()
 	{
+		Debug.Log("Getting rank");
+
 		string id = PlayerPrefs.GetInt("id").ToString();
 		string getRankURL = "http://www.snakeball.jctwood.uk/GetRank.php?";
-		WWW getRankPost = new WWW(getRankURL + "id=" + id);
+		WWW getRankPost = new WWW(getRankURL + "id=" + WWW.EscapeURL(id));
 		
 		yield return getRankPost;
 		
@@ -471,6 +484,8 @@ public class WorldController : MonoBehaviour
 
 	IEnumerator GetHighscores()
 	{
+		Debug.Log("Getting highscores");
+
 		string getHighscoresURL = "http://www.snakeball.jctwood.uk/GetHighscores.php";
 		WWW getHighscoresPost = new WWW(getHighscoresURL);
 		

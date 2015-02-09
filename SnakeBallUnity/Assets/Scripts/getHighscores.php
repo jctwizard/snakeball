@@ -1,6 +1,6 @@
 <?php
 
-$db = mysql_connect("192.185.34.202", "ramendev_jctwood", "M1n1flam3") 
+$db = mysql_connect("localhost", "ramendev_jctwood", "M1n1flam3") 
 	or die('Failed to connect: ' . mysql_error());
 
 mysql_select_db('ramendev_snakeball') or die('Failed to access database');

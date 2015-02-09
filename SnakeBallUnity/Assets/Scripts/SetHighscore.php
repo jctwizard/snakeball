@@ -1,6 +1,6 @@
 <?php
 
-$db = mysql_connect("192.185.34.202", "ramendev_jctwood", "M1n1flam3") 
+$db = mysql_connect("localhost", "ramendev_jctwood", "M1n1flam3") 
 	or die('Failed to connect: ' . mysql_error());
 
 mysql_select_db('ramendev_snakeball') or die('Failed to access database');
@@ -11,10 +11,7 @@ $score = mysql_real_escape_string($_GET['score'], $db);
 $query = 
    "UPDATE highscores
 	SET score = '$score', timestamp = 'CURRENT_TIMESTAMP'
-	WHERE id = '$id' and '$score' > score;
-
-	SELECT * FROM highscores
-	ORDER BY score DESC;";
+	WHERE id = '$id' and '$score' > score;";
 
 $result = mysql_query($query) or die('Query failed: ' . mysql_error());
 

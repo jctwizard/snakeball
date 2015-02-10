@@ -7,7 +7,7 @@ mysql_select_db('ramendev_snakeball') or die('Failed to access database');
 
 $id = mysql_real_escape_string($_GET['id'], $db);
 
-$query = 
+/*$query = 
    "SELECT  uo.*,
     (
 	    SELECT COUNT(*)
@@ -15,9 +15,15 @@ $query =
 	    WHERE (ui.score, -ui.timestamp) >= (uo.score, -uo.timestamp)
     ) AS rank
 	FROM highscores uo
-	WHERE id = '$id';";
+	WHERE id = '$id';";*/
+
+$query = 
+   "SELECT COUNT(*) AS rank FROM highscores
+  	WHERE score >= (SELECT score FROM highscores WHERE id = '$id');";
 
 $result = mysql_query($query) or die('Query failed: ' . mysql_error());
+
+$row = mysql_fetch_array($result);
 
 echo $row['rank'];
 

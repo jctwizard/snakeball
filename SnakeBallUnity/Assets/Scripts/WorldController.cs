@@ -67,7 +67,7 @@ public class WorldController : MonoBehaviour
 		errorText.gameObject.SetActive(false);
 		hiscorePanel.gameObject.SetActive(false);
 
-		Debug.Log(PlayerPrefs.GetInt("id"));
+		Debug.Log("id: " + PlayerPrefs.GetInt("id"));
 
 		StartCoroutine("SetHighscore");
 	}
@@ -471,6 +471,8 @@ public class WorldController : MonoBehaviour
 		
 		if (getRankPost.error == null)
 		{
+			Debug.Log("rank: " + getRankPost.text);
+
 			PlayerPrefs.SetInt("rank", System.Int32.Parse(getRankPost.text));
 
 			StartCoroutine("GetHighscores");
@@ -526,7 +528,7 @@ public class WorldController : MonoBehaviour
 			RightTextPosition -= new Vector2(0, 0.062f);
 			CentreTextPosition -= new Vector2(0, 0.062f);
 
-			for(int i=0;i<Names.Length;i++)
+			for(int i = 0; i < Names.Length; i++)
 			{
 				GameObject Score = Instantiate(baseText, RightTextPosition, Quaternion.identity) as GameObject;
 				Score.guiText.text = Scores[i];
@@ -537,7 +539,7 @@ public class WorldController : MonoBehaviour
 				Rank.guiText.text = "" + (i + 1);
 				Rank.guiText.anchor = TextAnchor.MiddleCenter;
 
-				if (i + 1 == rank)
+				if ((i + 1) == rank)
 				{
 					Score.guiText.material.color = Color.yellow;
 					Name.guiText.material.color = Color.yellow;

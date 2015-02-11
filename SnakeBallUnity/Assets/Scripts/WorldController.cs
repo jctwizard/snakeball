@@ -47,6 +47,9 @@ public class WorldController : MonoBehaviour
 	public Image rightButton;
 	public InputField nameInput;
 	public GameObject hiscoreList;
+	public GameObject rankColumn;
+	public GameObject nameColumn;
+	public GameObject scoreColumn;
 	public GameObject entryPrefab;
 
 	public Color blueColour;
@@ -424,31 +427,40 @@ public class WorldController : MonoBehaviour
 			else
 			{
 				loadingText.gameObject.SetActive(true);
+				hiscoreList.gameObject.SetActive(true);
+				
+				clearScores();
+
 				StartCoroutine("GetRank");
 			}
 		}
 	}
 
+	// Accessed from change name button component
 	public void changeName()
 	{
 		hiscoreList.SetActive(false);
-
-		foreach (Transform entry in hiscoreList.transform) 
-		{
-			if (entry.gameObject.tag == "Entry")
-			{
-				Destroy(entry.gameObject);
-			}
-		}
+		
+		clearScores();
 
 		nameInput.gameObject.SetActive(true);
 		nameInput.Select();
 		nameInput.ActivateInputField();
 	}
-
+	
+	// Accessed from name input button component
 	public void setName()
 	{
-		PlayerPrefs.SetString("name", nameInput.text);
+		string name = nameInput.text;
+
+		if ((name == "") || (name == " ") ||
+		    (name == "  ") || (name == "   ") ||
+		    (name == null))
+		{
+			name = "---";
+		}
+
+		PlayerPrefs.SetString("name", name);
 
 		nameInput.gameObject.SetActive(false);
 		
@@ -460,7 +472,38 @@ public class WorldController : MonoBehaviour
 		else
 		{
 			StartCoroutine("SetHighscore");
+
+			clearScores();
+			hiscoreList.gameObject.SetActive(true);
+
 			StartCoroutine("GetRank");
+		}
+	}
+	
+	public void clearScores()
+	{
+		foreach (Transform entry in rankColumn.transform) 
+		{
+			if (entry.gameObject.tag == "Entry")
+			{
+				Destroy(entry.gameObject);
+			}
+		}
+		
+		foreach (Transform entry in nameColumn.transform) 
+		{
+			if (entry.gameObject.tag == "Entry")
+			{
+				Destroy(entry.gameObject);
+			}
+		}
+		
+		foreach (Transform entry in scoreColumn.transform) 
+		{
+			if (entry.gameObject.tag == "Entry")
+			{
+				Destroy(entry.gameObject);
+			}
 		}
 	}
 
@@ -479,6 +522,8 @@ public class WorldController : MonoBehaviour
 			PlayerPrefs.SetInt("id", System.Int32.Parse(createHighscorePost.text));
 			
 			loadingText.gameObject.SetActive(true);
+			hiscoreList.gameObject.SetActive(true);
+
 			StartCoroutine("GetRank");
 		}
 
@@ -551,11 +596,10 @@ public class WorldController : MonoBehaviour
 		if (getHighscoresPost.error == null)
 		{
 			loadingText.gameObject.SetActive(false);
-			hiscoreList.gameObject.SetActive(true);
 
 			string[] textList = getHighscoresPost.text.Split(new string[]{"\n","\t"}, System.StringSplitOptions.RemoveEmptyEntries);
 		
-			string[] names = new string[Mathf.FloorToInt(textList.Length/2)];
+			string[] names = new string[Mathf.FloorToInt(textList.Length / 2)];
 			string[] scores = new string[names.Length];
 
 			int rank = PlayerPrefs.GetInt("rank");
@@ -563,7 +607,7 @@ public class WorldController : MonoBehaviour
 
 			for (int element = 0; element < textList.Length; element++)
 			{
-				if (element % 2 == 0)
+				if ((element % 2) == 0)
 				{
 					names[Mathf.FloorToInt(element / 2)] = textList[element];
 				}
@@ -576,35 +620,43 @@ public class WorldController : MonoBehaviour
 
 			for(int index = 0; index < names.Length; index++)
 			{
-				GameObject entry = Instantiate(entryPrefab) as GameObject;
-				entry.transform.SetParent(hiscoreList.transform, false);
-
-				Text[] values = entry.GetComponentsInChildren<Text>() as Text[];
-				values[0].text = "" + (index + 1);
-				values[1].text = names[index];
-				values[2].text = scores[index];
+				GameObject rankEntry = Instantiate(entryPrefab) as GameObject;
+				rankEntry.GetComponent<Text>().text = "" + (index + 1);
+				rankEntry.transform.SetParent(rankColumn.transform, false);
+				
+				GameObject nameEntry = Instantiate(entryPrefab) as GameObject;
+				nameEntry.GetComponent<Text>().text = names[index];
+				nameEntry.transform.SetParent(nameColumn.transform, false);
+				
+				GameObject scoreEntry = Instantiate(entryPrefab) as GameObject;
+				scoreEntry.GetComponent<Text>().text = scores[index];
+				scoreEntry.transform.SetParent(scoreColumn.transform, false);
 
 				if (index == rank)
 				{
-					values[0].color = highlightColour;
-					values[1].color = highlightColour;
-					values[2].color = highlightColour;
+					rankEntry.GetComponent<Text>().color = highlightColour;
+					nameEntry.GetComponent<Text>().color = highlightColour;
+					scoreEntry.GetComponent<Text>().color = highlightColour;
 				}
 			}
 
 			if (rank > 10)
 			{
-				GameObject entry = Instantiate(entryPrefab) as GameObject;
-				entry.transform.SetParent(hiscoreList.transform, false);
+				GameObject rankEntry = Instantiate(entryPrefab) as GameObject;
+				rankEntry.GetComponent<Text>().text = rank.ToString();
+				rankEntry.transform.SetParent(rankColumn.transform, false);
 				
-				Text[] values = entry.GetComponentsInChildren<Text>() as Text[];
-				values[0].text = rank.ToString();
-				values[1].text = name;
-				values[2].text = highscore.ToString();
+				GameObject nameEntry = Instantiate(entryPrefab) as GameObject;
+				nameEntry.GetComponent<Text>().text = name;
+				nameEntry.transform.SetParent(nameColumn.transform, false);
+				
+				GameObject scoreEntry = Instantiate(entryPrefab) as GameObject;
+				scoreEntry.GetComponent<Text>().text = highscore.ToString();
+				scoreEntry.transform.SetParent(scoreColumn.transform, false);
 
-				values[0].color = highlightColour;
-				values[1].color = highlightColour;
-				values[2].color = highlightColour;
+				rankEntry.GetComponent<Text>().color = highlightColour;
+				nameEntry.GetComponent<Text>().color = highlightColour;
+				scoreEntry.GetComponent<Text>().color = highlightColour;
 			}
 		}
 		

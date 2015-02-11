@@ -38,6 +38,7 @@ public class WorldController : MonoBehaviour
 	public Text retryText;
 	public Text pauseText;
 	public Text hiscoreText;
+	public Text nameText;
 	public Image hiscorePanel;
 	public Text errorText;
 	public Text loadingText;
@@ -50,6 +51,7 @@ public class WorldController : MonoBehaviour
 
 	public Color blueColour;
 	public Color noColour;
+	public Color highlightColour;
 
 	void Start() 
 	{
@@ -69,10 +71,14 @@ public class WorldController : MonoBehaviour
 		loadingText.gameObject.SetActive(false);
 		hiscorePanel.gameObject.SetActive(false);
 		hiscoreList.gameObject.SetActive(false);
+		nameText.gameObject.SetActive(false); 
 
 		Debug.Log("id: " + PlayerPrefs.GetInt("id"));
 
-		StartCoroutine("SetHighscore");
+		if (PlayerPrefs.GetInt("id") != 0)
+		{
+			StartCoroutine("SetHighscore");
+		}
 	}
 
 	void FixedUpdate() 
@@ -108,9 +114,9 @@ public class WorldController : MonoBehaviour
 
 		else if (!paused)
 		{
-			bool left = Input.GetKey(KeyCode.LeftArrow);
+			bool left = Input.GetKey(KeyCode.LeftArrow) || Input.GetMouseButton(0) || LeftKeyboard();
 
-			bool right = Input.GetKey(KeyCode.RightArrow);
+			bool right = Input.GetKey(KeyCode.RightArrow) || Input.GetMouseButton(1) || RightKeyboard();
 
 			if ((Input.touchCount > 0) && (Input.GetTouch(0).position.y < (Screen.height * 0.5f)))
 			{
@@ -144,6 +150,11 @@ public class WorldController : MonoBehaviour
 				{
 					highscore = score;
 					PlayerPrefs.SetInt("highscore", highscore);
+
+					if (PlayerPrefs.GetInt("id") != 0)
+					{
+						StartCoroutine("SetHighscore");
+					}
 				}
 				
 				scoreText.text = score + "/" + highscore;
@@ -193,8 +204,8 @@ public class WorldController : MonoBehaviour
 			{
 				gameOver = true;
 
-				leftButton.color = Color.white;
-				rightButton.color = Color.white;
+				leftButton.color = noColour;
+				rightButton.color = noColour;
 
 				retryText.gameObject.SetActive(true);
 				pauseText.gameObject.SetActive(false);
@@ -349,6 +360,7 @@ public class WorldController : MonoBehaviour
 			loadingText.gameObject.SetActive(false);
 			nameInput.gameObject.SetActive(false);
 			hiscoreList.gameObject.SetActive(false);
+			nameText.gameObject.SetActive(false);
 
 			foreach (Transform entry in hiscoreList.transform) 
 			{
@@ -377,6 +389,7 @@ public class WorldController : MonoBehaviour
 			
 			retryText.gameObject.SetActive(false);
 			pauseText.gameObject.SetActive(true);
+			hiscoreText.gameObject.SetActive(true);
 			
 			scoreText.text = score + "/" + highscore;
 			
@@ -399,6 +412,7 @@ public class WorldController : MonoBehaviour
 			hiscorePanel.gameObject.SetActive(true);
 			hiscoreText.gameObject.SetActive(false);
 			creditText.gameObject.SetActive(false);
+			nameText.gameObject.SetActive(true);
 
 			if (PlayerPrefs.GetInt("id") == 0)
 			{
@@ -415,13 +429,39 @@ public class WorldController : MonoBehaviour
 		}
 	}
 
+	public void changeName()
+	{
+		hiscoreList.SetActive(false);
+
+		foreach (Transform entry in hiscoreList.transform) 
+		{
+			if (entry.gameObject.tag == "Entry")
+			{
+				Destroy(entry.gameObject);
+			}
+		}
+
+		nameInput.gameObject.SetActive(true);
+		nameInput.Select();
+		nameInput.ActivateInputField();
+	}
+
 	public void setName()
 	{
 		PlayerPrefs.SetString("name", nameInput.text);
 
 		nameInput.gameObject.SetActive(false);
+		
+		if (PlayerPrefs.GetInt("id") == 0)
+		{
+			StartCoroutine("CreateHighscore");
+		}
 
-		StartCoroutine("CreateHighscore");
+		else
+		{
+			StartCoroutine("SetHighscore");
+			StartCoroutine("GetRank");
+		}
 	}
 
 	IEnumerator CreateHighscore()
@@ -453,8 +493,9 @@ public class WorldController : MonoBehaviour
 		Debug.Log("Setting highscore");
 
 		string id = PlayerPrefs.GetInt("id").ToString();
+		string name = PlayerPrefs.GetString ("name");
 		string setHighscoreURL = "http://www.snakeball.jctwood.uk/SetHighscore.php?";
-		WWW setHighscorePost = new WWW(setHighscoreURL + "id=" + WWW.EscapeURL(id) + "&score=" + WWW.EscapeURL(highscore.ToString()));
+		WWW setHighscorePost = new WWW(setHighscoreURL + "id=" + WWW.EscapeURL(id) + "&name=" + WWW.EscapeURL(name) + "&score=" + WWW.EscapeURL(highscore.ToString()));
 		
 		yield return setHighscorePost;
 		
@@ -468,7 +509,7 @@ public class WorldController : MonoBehaviour
 			Debug.Log("Success");
 		}
 	}
-	
+
 	IEnumerator GetRank()
 	{
 		Debug.Log("Getting rank");
@@ -543,11 +584,11 @@ public class WorldController : MonoBehaviour
 				values[1].text = names[index];
 				values[2].text = scores[index];
 
-				if ((index + 1) == rank)
+				if (index == rank)
 				{
-					values[0].color = Color.yellow;
-					values[1].color = Color.yellow;
-					values[2].color = Color.yellow;
+					values[0].color = highlightColour;
+					values[1].color = highlightColour;
+					values[2].color = highlightColour;
 				}
 			}
 
@@ -561,9 +602,9 @@ public class WorldController : MonoBehaviour
 				values[1].text = name;
 				values[2].text = highscore.ToString();
 
-				values[0].color = Color.yellow;
-				values[1].color = Color.yellow;
-				values[2].color = Color.yellow;
+				values[0].color = highlightColour;
+				values[1].color = highlightColour;
+				values[2].color = highlightColour;
 			}
 		}
 		
@@ -578,5 +619,42 @@ public class WorldController : MonoBehaviour
 	void Error()
 	{
 		errorText.gameObject.SetActive(true);
+	}
+
+	bool LeftKeyboard()
+	{
+		if (Input.GetKey("1") || Input.GetKey("2") || Input.GetKey("3") ||
+		    Input.GetKey("4") || Input.GetKey("q") || Input.GetKey("w") ||
+		    Input.GetKey("e") || Input.GetKey("r") || Input.GetKey("a") ||
+		    Input.GetKey("s") || Input.GetKey("d") || Input.GetKey("f") ||
+		    Input.GetKey("z") || Input.GetKey("x") || Input.GetKey("c")	)
+		{
+			return true;
+		}
+
+		else
+		{
+			return false;
+		}
+	}
+
+	bool RightKeyboard()
+	{
+		if (Input.GetKey("7") || Input.GetKey("8") || Input.GetKey("9") ||
+		    Input.GetKey("0") || Input.GetKey("-") || Input.GetKey("=") ||
+		    Input.GetKey("u") || Input.GetKey("i") || Input.GetKey("o") ||
+		    Input.GetKey("p") || Input.GetKey("[") || Input.GetKey("]") ||
+		    Input.GetKey("h") || Input.GetKey("j") || Input.GetKey("k") ||
+		    Input.GetKey("l") || Input.GetKey(";") || Input.GetKey("'") ||
+		    Input.GetKey("n") || Input.GetKey("m") || Input.GetKey(",") ||
+		    Input.GetKey(".") || Input.GetKey("/") )
+		{
+			return true;
+		}
+		
+		else
+		{
+			return false;
+		}
 	}
 }

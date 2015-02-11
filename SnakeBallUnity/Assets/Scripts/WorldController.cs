@@ -40,12 +40,13 @@ public class WorldController : MonoBehaviour
 	public Text hiscoreText;
 	public Image hiscorePanel;
 	public Text errorText;
+	public Text loadingText;
 	public Text snakeballText;
 	public Image leftButton;
 	public Image rightButton;
 	public InputField nameInput;
-
-	public GameObject baseText;
+	public GameObject hiscoreList;
+	public GameObject entryPrefab;
 
 	public Color blueColour;
 	public Color noColour;
@@ -65,7 +66,9 @@ public class WorldController : MonoBehaviour
 		creditText.gameObject.SetActive(false);
 		nameInput.gameObject.SetActive(false);
 		errorText.gameObject.SetActive(false);
+		loadingText.gameObject.SetActive(false);
 		hiscorePanel.gameObject.SetActive(false);
+		hiscoreList.gameObject.SetActive(false);
 
 		Debug.Log("id: " + PlayerPrefs.GetInt("id"));
 
@@ -95,6 +98,7 @@ public class WorldController : MonoBehaviour
 				
 				retryText.gameObject.SetActive(false);
 				pauseText.gameObject.SetActive(true);
+				hiscoreText.gameObject.SetActive(true);
 				
 				scoreText.text = score + "/" + highscore;
 				
@@ -194,6 +198,7 @@ public class WorldController : MonoBehaviour
 
 				retryText.gameObject.SetActive(true);
 				pauseText.gameObject.SetActive(false);
+				hiscoreText.gameObject.SetActive(false);
 			}
 		}
 	}
@@ -341,13 +346,16 @@ public class WorldController : MonoBehaviour
 			hiscoreText.gameObject.SetActive(true);
 			hiscorePanel.gameObject.SetActive(false);
 			errorText.gameObject.SetActive(false);
+			loadingText.gameObject.SetActive(false);
 			nameInput.gameObject.SetActive(false);
+			hiscoreList.gameObject.SetActive(false);
 
-			GUIText[] scores = FindObjectsOfType(typeof(GUIText)) as GUIText[];
-
-			foreach (GUIText score in scores)
+			foreach (Transform entry in hiscoreList.transform) 
 			{
-				Destroy(score.gameObject);
+				if (entry.gameObject.tag == "Entry")
+				{
+					Destroy(entry.gameObject);
+				}
 			}
 		}
 	}
@@ -401,6 +409,7 @@ public class WorldController : MonoBehaviour
 
 			else
 			{
+				loadingText.gameObject.SetActive(true);
 				StartCoroutine("GetRank");
 			}
 		}
@@ -428,7 +437,8 @@ public class WorldController : MonoBehaviour
 		if (createHighscorePost.error == null)
 		{
 			PlayerPrefs.SetInt("id", System.Int32.Parse(createHighscorePost.text));
-
+			
+			loadingText.gameObject.SetActive(true);
 			StartCoroutine("GetRank");
 		}
 
@@ -466,7 +476,7 @@ public class WorldController : MonoBehaviour
 		string id = PlayerPrefs.GetInt("id").ToString();
 		string getRankURL = "http://www.snakeball.jctwood.uk/GetRank.php?";
 		WWW getRankPost = new WWW(getRankURL + "id=" + WWW.EscapeURL(id));
-		
+
 		yield return getRankPost;
 		
 		if (getRankPost.error == null)
@@ -480,6 +490,8 @@ public class WorldController : MonoBehaviour
 
 		else
 		{
+			loadingText.gameObject.SetActive(false);
+
 			Error();
 		}
 	}
@@ -490,87 +502,76 @@ public class WorldController : MonoBehaviour
 
 		string getHighscoresURL = "http://www.snakeball.jctwood.uk/GetHighscores.php";
 		WWW getHighscoresPost = new WWW(getHighscoresURL);
-		
+
+		loadingText.gameObject.SetActive(true);
+
 		yield return getHighscoresPost;
 		
 		if (getHighscoresPost.error == null)
 		{
-			string[] textlist = getHighscoresPost.text.Split(new string[]{"\n","\t"}, System.StringSplitOptions.RemoveEmptyEntries);
-		
-			string[] Names = new string[Mathf.FloorToInt(textlist.Length/2)];
-			string[] Scores = new string[Names.Length];
-			int rank = PlayerPrefs.GetInt("rank");
+			loadingText.gameObject.SetActive(false);
+			hiscoreList.gameObject.SetActive(true);
 
-			for (int i = 0; i < textlist.Length; i++)
+			string[] textList = getHighscoresPost.text.Split(new string[]{"\n","\t"}, System.StringSplitOptions.RemoveEmptyEntries);
+		
+			string[] names = new string[Mathf.FloorToInt(textList.Length/2)];
+			string[] scores = new string[names.Length];
+
+			int rank = PlayerPrefs.GetInt("rank");
+			string name = PlayerPrefs.GetString("name");
+
+			for (int element = 0; element < textList.Length; element++)
 			{
-				if (i % 2 == 0)
+				if (element % 2 == 0)
 				{
-					Names[Mathf.FloorToInt(i / 2)] = textlist[i];
+					names[Mathf.FloorToInt(element / 2)] = textList[element];
 				}
 
 				else 
 				{
-					Scores[Mathf.FloorToInt(i / 2)] = textlist[i];
+					scores[Mathf.FloorToInt(element / 2)] = textList[element];
 				}
 			}
 
-			// Create text
-			Vector2 LeftTextPosition = new Vector2(0.22f,0.85f);
-			Vector2 RightTextPosition = new Vector2(0.76f, 0.85f);
-			Vector2 CentreTextPosition = new Vector2(0.33f, 0.85f);
-
-			GameObject Scoresheader = Instantiate(baseText, new Vector2(0.5f,0.94f), Quaternion.identity) as GameObject;
-			Scoresheader.guiText.text = "High Scores";
-			Scoresheader.guiText.anchor = TextAnchor.MiddleCenter;
-			Scoresheader.guiText.fontSize = 35;
-
-			LeftTextPosition -= new Vector2(0, 0.062f);
-			RightTextPosition -= new Vector2(0, 0.062f);
-			CentreTextPosition -= new Vector2(0, 0.062f);
-
-			for(int i = 0; i < Names.Length; i++)
+			for(int index = 0; index < names.Length; index++)
 			{
-				GameObject Score = Instantiate(baseText, RightTextPosition, Quaternion.identity) as GameObject;
-				Score.guiText.text = Scores[i];
-				Score.guiText.anchor = TextAnchor.MiddleCenter;
-				GameObject Name = Instantiate(baseText, CentreTextPosition, Quaternion.identity) as GameObject;
-				Name.guiText.text = Names[i];
-				GameObject Rank = Instantiate(baseText, LeftTextPosition, Quaternion.identity) as GameObject;
-				Rank.guiText.text = "" + (i + 1);
-				Rank.guiText.anchor = TextAnchor.MiddleCenter;
+				GameObject entry = Instantiate(entryPrefab) as GameObject;
+				entry.transform.SetParent(hiscoreList.transform, false);
 
-				if ((i + 1) == rank)
+				Text[] values = entry.GetComponentsInChildren<Text>() as Text[];
+				values[0].text = "" + (index + 1);
+				values[1].text = names[index];
+				values[2].text = scores[index];
+
+				if ((index + 1) == rank)
 				{
-					Score.guiText.material.color = Color.yellow;
-					Name.guiText.material.color = Color.yellow;
-					Rank.guiText.material.color = Color.yellow;
+					values[0].color = Color.yellow;
+					values[1].color = Color.yellow;
+					values[2].color = Color.yellow;
 				}
-
-				LeftTextPosition -= new Vector2(0, 0.062f);
-				RightTextPosition -= new Vector2(0, 0.062f);
-				CentreTextPosition -= new Vector2(0, 0.062f);
 			}
 
 			if (rank > 10)
 			{
-				GameObject Score = Instantiate(baseText, RightTextPosition, Quaternion.identity) as GameObject;
-				Score.guiText.text = "" + highscore;
-				Score.guiText.anchor = TextAnchor.MiddleCenter;
-				GameObject Name = Instantiate(baseText, CentreTextPosition, Quaternion.identity) as GameObject;
-				Name.guiText.text = PlayerPrefs.GetString("name");
-				GameObject Rank = Instantiate(baseText, LeftTextPosition, Quaternion.identity) as GameObject;
-				Rank.guiText.text = "" + (rank);
-				Rank.guiText.anchor = TextAnchor.MiddleCenter;
+				GameObject entry = Instantiate(entryPrefab) as GameObject;
+				entry.transform.SetParent(hiscoreList.transform, false);
 				
-				Score.guiText.material.color = Color.yellow;
-				Name.guiText.material.color = Color.yellow;
-				Rank.guiText.material.color = Color.yellow;
+				Text[] values = entry.GetComponentsInChildren<Text>() as Text[];
+				values[0].text = rank.ToString();
+				values[1].text = name;
+				values[2].text = highscore.ToString();
+
+				values[0].color = Color.yellow;
+				values[1].color = Color.yellow;
+				values[2].color = Color.yellow;
 			}
 		}
 		
 		else
 		{
 			Error();
+			
+			loadingText.gameObject.SetActive(false);
 		}
 	}
 
